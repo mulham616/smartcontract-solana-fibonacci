@@ -1,5 +1,5 @@
 use borsh::BorshDeserialize;
-use helloworld::{process_instruction, GreetingAccount};
+use helloworld::{process_instruction, Fibonacci};
 use solana_program_test::*;
 use solana_sdk::{
     account::Account,
@@ -13,7 +13,7 @@ use std::mem;
 #[tokio::test]
 async fn test_helloworld() {
     let program_id = Pubkey::new_unique();
-    let greeted_pubkey = Pubkey::new_unique();
+    let fibo_pubkey = Pubkey::new_unique();
 
     let mut program_test = ProgramTest::new(
         "helloworld", // Run the BPF version with `cargo test-bpf`
@@ -21,7 +21,7 @@ async fn test_helloworld() {
         processor!(process_instruction), // Run the native version with `cargo test`
     );
     program_test.add_account(
-        greeted_pubkey,
+        fibo_pubkey,
         Account {
             lamports: 5,
             data: vec![0_u8; mem::size_of::<u32>()],
@@ -32,15 +32,15 @@ async fn test_helloworld() {
     let (mut banks_client, payer, recent_blockhash) = program_test.start().await;
 
     // Verify account has zero greetings
-    let greeted_account = banks_client
-        .get_account(greeted_pubkey)
+    let fibo_account = banks_client
+        .get_account(fibo_pubkey)
         .await
         .expect("get_account")
-        .expect("greeted_account not found");
+        .expect("fibo_account not found");
     assert_eq!(
-        GreetingAccount::try_from_slice(&greeted_account.data)
+        Fibonacci::try_from_slice(&fibo_account.data)
             .unwrap()
-            .counter,
+            .val,
         0
     );
 
@@ -49,7 +49,7 @@ async fn test_helloworld() {
         &[Instruction::new_with_bincode(
             program_id,
             &[0], // ignored but makes the instruction unique in the slot
-            vec![AccountMeta::new(greeted_pubkey, false)],
+            vec![AccountMeta::new(fibo_pubkey, false)],
         )],
         Some(&payer.pubkey()),
     );
@@ -57,15 +57,15 @@ async fn test_helloworld() {
     banks_client.process_transaction(transaction).await.unwrap();
 
     // Verify account has one greeting
-    let greeted_account = banks_client
-        .get_account(greeted_pubkey)
+    let fibo_account = banks_client
+        .get_account(fibo_pubkey)
         .await
         .expect("get_account")
-        .expect("greeted_account not found");
+        .expect("fibo_account not found");
     assert_eq!(
-        GreetingAccount::try_from_slice(&greeted_account.data)
+        Fibonacci::try_from_slice(&fibo_account.data)
             .unwrap()
-            .counter,
+            .val,
         1
     );
 
@@ -74,7 +74,7 @@ async fn test_helloworld() {
         &[Instruction::new_with_bincode(
             program_id,
             &[1], // ignored but makes the instruction unique in the slot
-            vec![AccountMeta::new(greeted_pubkey, false)],
+            vec![AccountMeta::new(fibo_pubkey, false)],
         )],
         Some(&payer.pubkey()),
     );
@@ -82,15 +82,15 @@ async fn test_helloworld() {
     banks_client.process_transaction(transaction).await.unwrap();
 
     // Verify account has two greetings
-    let greeted_account = banks_client
-        .get_account(greeted_pubkey)
+    let fibo_account = banks_client
+        .get_account(fibo_pubkey)
         .await
         .expect("get_account")
-        .expect("greeted_account not found");
+        .expect("fibo_account not found");
     assert_eq!(
-        GreetingAccount::try_from_slice(&greeted_account.data)
+        Fibonacci::try_from_slice(&fibo_account.data)
             .unwrap()
-            .counter,
+            .val,
         2
     );
 }

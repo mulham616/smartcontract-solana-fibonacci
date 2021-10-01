@@ -10,10 +10,24 @@ use solana_program::{
 
 /// Define the type of state stored in accounts
 #[derive(BorshSerialize, BorshDeserialize, Debug)]
-pub struct GreetingAccount {
-    /// number of greetings
-    pub counter: u32,
+pub struct Fibonacci {
+    pub val: u32, // i8 is signed. unsigned integers are also available: u8, u16, u32, u64, u128
 }
+
+impl Fibonacci {
+    pub fn calculate(&mut self, my_data: u8) {
+        self.val = fibonacci(my_data);
+    }
+}
+
+fn fibonacci(n: u8) -> u32 {
+    match n {
+        0 => 1,
+        1 => 1,
+        _ => fibonacci(n - 1) + fibonacci(n - 2),
+    }
+}
+
 
 // Declare and export the program's entrypoint
 entrypoint!(process_instruction);
@@ -38,15 +52,16 @@ pub fn process_instruction(
         return Err(ProgramError::IncorrectProgramId);
     }
 
-    // Increment and store the number of times the account has been greeted
-    let mut greeting_account = GreetingAccount::try_from_slice(&account.data.borrow())?;
-    greeting_account.counter += 1;
-    greeting_account.serialize(&mut &mut account.data.borrow_mut()[..])?;
+    // Calculate fibonacci and store the number of times the account has been greeted
+    let mut fibo_account = Fibonacci::try_from_slice(&account.data.borrow())?;
+    fibo_account.calculate(_instruction_data[0]);
+    fibo_account.serialize(&mut &mut account.data.borrow_mut()[..])?;
 
-    msg!("Greeted {} time(s)!", greeting_account.counter);
+    msg!("fibonacci value generated {}", fibo_account.val);
 
     Ok(())
 }
+
 
 // Sanity tests
 #[cfg(test)]
@@ -72,29 +87,40 @@ mod test {
             false,
             Epoch::default(),
         );
-        let instruction_data: Vec<u8> = Vec::new();
+        let mut instruction_data: Vec<u8> = Vec::new();
+        instruction_data.push(0);
 
         let accounts = vec![account];
 
         assert_eq!(
-            GreetingAccount::try_from_slice(&accounts[0].data.borrow())
+            Fibonacci::try_from_slice(&accounts[0].data.borrow())
                 .unwrap()
-                .counter,
-            0
-        );
-        process_instruction(&program_id, &accounts, &instruction_data).unwrap();
-        assert_eq!(
-            GreetingAccount::try_from_slice(&accounts[0].data.borrow())
-                .unwrap()
-                .counter,
+                .val,
             1
         );
+        instruction_data[0] = 1;
         process_instruction(&program_id, &accounts, &instruction_data).unwrap();
         assert_eq!(
-            GreetingAccount::try_from_slice(&accounts[0].data.borrow())
+            Fibonacci::try_from_slice(&accounts[0].data.borrow())
                 .unwrap()
-                .counter,
+                .val,
+            1
+        );
+        instruction_data[0] = 2;
+        process_instruction(&program_id, &accounts, &instruction_data).unwrap();
+        assert_eq!(
+            Fibonacci::try_from_slice(&accounts[0].data.borrow())
+                .unwrap()
+                .val,
             2
+        );
+        instruction_data[0] = 5;
+        process_instruction(&program_id, &accounts, &instruction_data).unwrap();
+        assert_eq!(
+            Fibonacci::try_from_slice(&accounts[0].data.borrow())
+                .unwrap()
+                .val,
+            13
         );
     }
 }

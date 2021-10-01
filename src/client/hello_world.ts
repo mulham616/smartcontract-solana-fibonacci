@@ -59,11 +59,11 @@ const PROGRAM_KEYPAIR_PATH = path.join(PROGRAM_PATH, 'helloworld-keypair.json');
 /**
  * The state of a greeting account managed by the hello world program
  */
-class GreetingAccount {
-  counter = 0;
-  constructor(fields: {counter: number} | undefined = undefined) {
+class Fibonacci {
+  val = 0;
+  constructor(fields: {val: number} | undefined = undefined) {
     if (fields) {
-      this.counter = fields.counter;
+      this.val = fields.val;
     }
   }
 }
@@ -72,7 +72,7 @@ class GreetingAccount {
  * Borsh schema definition for greeting accounts
  */
 const GreetingSchema = new Map([
-  [GreetingAccount, {kind: 'struct', fields: [['counter', 'u32']]}],
+  [Fibonacci, {kind: 'struct', fields: [['val', 'u32']]}],
 ]);
 
 /**
@@ -80,7 +80,7 @@ const GreetingSchema = new Map([
  */
 const GREETING_SIZE = borsh.serialize(
   GreetingSchema,
-  new GreetingAccount(),
+  new Fibonacci(),
 ).length;
 
 /**
@@ -222,13 +222,13 @@ export async function reportGreetings(): Promise<void> {
   }
   const greeting = borsh.deserialize(
     GreetingSchema,
-    GreetingAccount,
+    Fibonacci,
     accountInfo.data,
   );
   console.log(
     greetedPubkey.toBase58(),
     'has been greeted',
-    greeting.counter,
+    greeting.val,
     'time(s)',
   );
 }
